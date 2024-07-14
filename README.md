@@ -1,8 +1,13 @@
 Sentiment Analysis of Reviews Deployment
+
 Overview:
-This project involves building a sentiment analysis model that classifies user reviews into positive, neutral, and negative sentiments. The model is trained using a dataset of reviews and various machine learning techniques. The project is implemented using Python and incorporates Natural Language Processing (NLP) techniques, machine learning algorithms, and a deployment interface using Streamlit.
+
+This project involves building a sentiment analysis model that classifies user reviews into positive, neutral, and negative sentiments. 
+The model is trained using a dataset of reviews and various machine learning techniques. 
+The project is implemented using Python and incorporates Natural Language Processing (NLP) techniques, machine learning algorithms, and a deployment interface using Streamlit.
 
 Features:
+
 Data Preprocessing: Includes steps for cleaning the text data, removing duplicates, and handling missing values.
 Sentiment Analysis: Utilizes the VADER Sentiment Analyzer to label reviews as Positive, Negative, or Neutral.
 Machine Learning Model: Trains a Random Forest classifier to predict sentiment based on TF-IDF vectorized text data.
