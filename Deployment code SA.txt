@@ -1,0 +1,131 @@
+Deployment code SA
+# Import the necessary libraries
+import numpy as np
+import pandas as pd
+import re
+import nltk
+from nltk.corpus import stopwords
+from nltk.stem import WordNetLemmatizer
+from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
+from sklearn.preprocessing import LabelEncoder
+from imblearn.over_sampling import SMOTE
+from sklearn.model_selection import train_test_split
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
+import streamlit as st
+from PIL import Image
+
+
+# Load the dataset
+df = pd.read_csv("reviews.csv")
+
+# Reset the index and set it to start from 1
+df.reset_index(drop=True, inplace=True)
+df.index = df.index + 1
+df.index.name = 'SI.No'
+
+# Renaming the columns
+df_1 = df.rename({'headline':'Headline','reviewBody':'Review','ratingValue':'Ratings'}, axis=1)
+
+# Drop missing values
+df_1.dropna(inplace=True)
+
+# Remove duplicate rows
+df_1.drop_duplicates(inplace=True)
+df_1.reset_index(drop=True, inplace=True)
+
+# Download necessary NLTK data
+nltk.download('stopwords')
+nltk.download('wordnet')
+
+# Initialize the lemmatizer
+lemmatizer = WordNetLemmatizer()
+
+# Function to preprocess text
+def preprocess_text(text):
+    text = re.sub('[^a-zA-Z]', ' ', text)  # Remove special characters and numbers
+    text = text.lower()  # Convert to lowercase
+    words = text.split()  # Tokenize
+    words = [lemmatizer.lemmatize(word) for word in words if word not in set(stopwords.words('english'))]  # Remove stopwords and lemmatize
+    return ' '.join(words)
+
+# Apply preprocessing
+df_1['cleaned_text'] = df_1['Review'].apply(preprocess_text)
+
+# Initialize VADER Sentiment Analyzer
+analyzer = SentimentIntensityAnalyzer()
+
+# Function to get sentiment
+def get_sentiment_vader(text):
+    score = analyzer.polarity_scores(text)
+    print(f"Text: {text}, Score: {score}")  # Debugging
+    if score['compound'] >= 0.05:
+        return 'Positive'
+    elif score['compound'] <= -0.05:
+        return 'Negative'
+    else:
+        return 'Neutral'
+
+# Apply function to the dataframe
+df_1['sentiment'] = df_1['cleaned_text'].apply(get_sentiment_vader)
+
+# Splitting Data
+X = df_1['cleaned_text']
+y = df_1['sentiment']
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+
+# Vectorization
+vectorizer = TfidfVectorizer()
+X_train_tfidf = vectorizer.fit_transform(X_train)
+X_test_tfidf = vectorizer.transform(X_test)
+
+# Handling Imbalance using SMOTE
+smote = SMOTE(random_state=42)
+X_train_res, y_train_res = smote.fit_resample(X_train_tfidf, y_train)
+
+# Model Training
+model = RandomForestClassifier(n_estimators=10, random_state=33)
+model.fit(X_train_res, y_train_res)
+
+# Prediction and Evaluation
+y_pred = model.predict(X_test_tfidf)
+print(confusion_matrix(y_test, y_pred))
+print(classification_report(y_test, y_pred))
+print('Accuracy:', accuracy_score(y_test, y_pred))
+
+# Define the sentiment dictionary
+sentiment_dict = {'Negative': 'Negative', 'Neutral': 'Neutral', 'Positive': 'Positive:smile:'}
+
+# Streamlit App
+def main():
+    st.title(" :blue[Sentiment]Analysis :sunglasses:")
+    image = Image.open("/content/pic SA.jpg")
+    st.image(image)
+
+    # Get user input text
+    user_input = st.text_area("Enter your text here", height=150)
+
+    if st.button("Detect"):
+        if user_input.strip() == "":
+            st.warning("Please enter some text.")
+        else:
+            try:
+                # Vectorize the user input text
+                user_input_tfidf = vectorizer.transform([user_input])
+
+                # Predict the sentiment using the loaded model
+                prediction = model.predict(user_input_tfidf)[0]
+
+                # Debug print to check prediction
+                print("Prediction:", prediction)
+
+                # Display the predicted sentiment if prediction is in sentiment_dict
+                predicted_sentiment = sentiment_dict.get(prediction, "Unknown")
+                st.subheader("Predicted Sentiment:")
+                st.write(predicted_sentiment)
+            except Exception as e:
+                st.error(f"Error predicting sentiment: {e}")
+
+if __name__ == "__main__":
+    main()
