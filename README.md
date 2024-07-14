@@ -38,5 +38,3 @@ Streamlit: For deploying the model as a web application
 Contributing
 Contributions are welcome! Please fork this repository and submit a pull request for any features, bug fixes, or improvements.
 
-License
-This project is licensed under the MIT License. See the LICENSE file for more details.
